@@ -300,19 +300,30 @@ struct PlainTextField: UIViewRepresentable {
         tf.font = font
         tf.textAlignment = textAlignment
         tf.textColor = textColor ?? .label
-        // 与 SwiftUI 焦点状态双向同步
-        if let focusedField, let field {
-            let active = focusedField.wrappedValue == field
-            if active && !tf.isFirstResponder {
+        // 与 SwiftUI 焦点状态同步：仅在“目标焦点发生变化”时才调用 UIKit 焦点 API。
+        // 每敲一个字符都会走一次 updateUIView，若每次都 become/resign，
+        // Mac Catalyst 上会引发焦点抖动，表现为一输入就失焦、需重新点选。
+        guard let focusedField, let field else { return }
+        let coordinator = context.coordinator
+        let active = focusedField.wrappedValue == field
+        if active == coordinator.focusSynced { return }
+        coordinator.focusSynced = active
+        if active {
+            guard !tf.isFirstResponder else { return }
+            // 异步请求焦点，避开 SwiftUI 渲染/键盘过渡窗口；执行前再校验目标，期间焦点已改属他人则放弃
+            DispatchQueue.main.async {
+                guard !tf.isFirstResponder, focusedField.wrappedValue == field else { return }
                 tf.becomeFirstResponder()
-            } else if !active && tf.isFirstResponder {
-                tf.resignFirstResponder()
             }
+        } else if tf.isFirstResponder {
+            tf.resignFirstResponder()
         }
     }
 
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: PlainTextField
+        // 上次同步给 UIKit 的焦点状态；与当前一致则跳过，避免打字期间反复调用焦点 API
+        var focusSynced = false
         init(parent: PlainTextField) { self.parent = parent }
 
         func textFieldDidBeginEditing(_ tf: UITextField) {
@@ -542,7 +553,7 @@ struct AveragingResultView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.white.opacity(0.85))
 
-                    Text(String(format: "¥%.2f", result.averageCost))
+                    Text(String(format: "¥%.3f", result.averageCost))
                         .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         .foregroundColor(.white)
                         .textSelection(.enabled)
