@@ -5,12 +5,14 @@ import UIKit
 enum CalculatorField: Hashable {
     case stockCode, buyPrice, sellPrice, shares
     case positionCost, positionShares, addPrice, addShares, currentPrice
+    case probeBasePrice, probeShares
 }
 
-// 计算模式：交易盈亏 / 加仓成本
+// 计算模式：交易盈亏 / 加仓成本 / 涨跌推演
 enum CalculatorMode: String, CaseIterable {
     case trade = "Profit"
     case averaging = "Add Stock"
+    case scenario = "推演"
 }
 
 struct CalculatorView: View {
@@ -30,11 +32,17 @@ struct CalculatorView: View {
     @State private var addShares = ""
     @State private var currentPrice = ""
 
+    // 涨跌推演
+    @State private var probeBasePrice = ""
+    @State private var probeShares = ""
+    @State private var probePercent: Double = 0
+
     @State private var mode: CalculatorMode = .trade
     @FocusState private var focusedField: CalculatorField?
 
     private var hasTradeResult: Bool { currentResult != nil }
     private var hasAveragingResult: Bool { averagingResult != nil }
+    private var hasScenarioResult: Bool { scenarioBasePrice != nil }
 
     var body: some View {
         NavigationStack {
@@ -48,11 +56,15 @@ struct CalculatorView: View {
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
 
-                    if mode == .trade {
+                    switch mode {
+                    case .trade:
                         tradeSection
                             .transition(.opacity)
-                    } else {
+                    case .averaging:
                         averagingSection
+                            .transition(.opacity)
+                    case .scenario:
+                        scenarioSection
                             .transition(.opacity)
                     }
                 }
@@ -60,6 +72,7 @@ struct CalculatorView: View {
                 .animation(.snappy, value: mode)
                 .animation(.snappy, value: hasTradeResult)
                 .animation(.snappy, value: hasAveragingResult)
+                .animation(.snappy, value: hasScenarioResult)
                 // 切换模式时收起键盘，避免键盘收起与内容过渡叠加产生跳动
                 .onChange(of: mode) { _, _ in
                     focusedField = nil
@@ -162,6 +175,60 @@ struct CalculatorView: View {
         }
     }
 
+    // MARK: - 涨跌推演（基准价 + 涨跌幅滑杆 → 目标价/收益，仅即时测算不入历史）
+
+    private var scenarioSection: some View {
+        VStack(spacing: 12) {
+            VStack(spacing: 0) {
+                InputRow(field: .probeBasePrice, focusedField: $focusedField, icon: "dollarsign.circle", iconColor: .blue, title: "基准价", placeholder: "0.00", text: $probeBasePrice, unit: "", keyboardType: .decimalPad)
+                rowDivider
+                InputRow(field: .probeShares, focusedField: $focusedField, icon: "chart.bar", title: "股数", placeholder: "选填", text: $probeShares, unit: "", keyboardType: .numberPad)
+            }
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal)
+
+            if let base = scenarioBasePrice {
+                // 涨跌幅滑杆（A 股主板日常波动区间 ±10%）
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("涨跌幅")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(String(format: "%+.1f%%", probePercent))
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(probePercent > 0 ? .red : (probePercent < 0 ? .green : .secondary))
+                    }
+
+                    Slider(value: $probePercent, in: -10...10, step: 0.1)
+
+                    HStack {
+                        Text("-10%")
+                        Spacer()
+                        Text("0%")
+                        Spacer()
+                        Text("+10%")
+                    }
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                ScenarioResultView(basePrice: base, percent: probePercent, shares: Double(probeShares).flatMap { $0 > 0 ? $0 : nil })
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.bottom, 32)
+            }
+        }
+    }
+
     // 行间全宽细分隔线
     private var rowDivider: some View {
         Divider()
@@ -185,6 +252,11 @@ struct CalculatorView: View {
         }
         let cp = Double(currentPrice).flatMap { $0 > 0 ? $0 : nil }
         return viewModel.calculateAveraging(positionCost: pc, positionShares: ps, addPrice: ap, addShares: ash, currentPrice: cp)
+    }
+
+    // 推演有效基准价（>0 才展示滑杆与结果）
+    private var scenarioBasePrice: Double? {
+        Double(probeBasePrice).flatMap { $0 > 0 ? $0 : nil }
     }
 
     private func saveTrade() {
@@ -591,6 +663,90 @@ struct AveragingResultView: View {
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 13)
+                }
+            }
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal)
+        }
+    }
+
+    private func statRow(_ title: LocalizedStringKey, _ value: String, color: Color?) -> some View {
+        HStack {
+            Text(title).font(.subheadline).foregroundColor(.secondary)
+            Spacer()
+            Text(value).font(.subheadline).fontWeight(.semibold)
+                .foregroundColor(color ?? .primary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 13)
+    }
+}
+
+// MARK: - Scenario Result
+
+// 涨跌推演结果：目标价主卡 + 收益明细卡（毛收益，未扣手续费）
+struct ScenarioResultView: View {
+    @EnvironmentObject var viewModel: TradeViewModel
+    let basePrice: Double
+    let percent: Double      // 涨跌幅 %
+    let shares: Double?      // 持股数量（选填）
+
+    private var targetPrice: Double { basePrice * (1 + percent / 100) }
+    private var priceDiff: Double { targetPrice - basePrice }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // 蓝色渐变主卡：目标价 + 涨跌幅
+            BlueHeroCard {
+                VStack(spacing: 8) {
+                    Text("目标价")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.85))
+
+                    Text(String(format: "¥%.2f", targetPrice))
+                        .font(.system(.largeTitle, design: .rounded).weight(.heavy))
+                        .foregroundColor(.white)
+                        .textSelection(.enabled)
+
+                    Text(String(format: "%+.1f%%", percent))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.25))
+                        .clipShape(Capsule())
+                }
+            } footer: {
+                HStack {
+                    Text("涨跌额").font(.subheadline)
+                    Spacer()
+                    Text(viewModel.localizedFormat("毛利润格式", priceDiff >= 0 ? "+" : "-", abs(priceDiff)))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+            }
+
+            // 收益明细卡：填了股数显示预计收益/市值，否则提示输入股数
+            VStack(spacing: 0) {
+                if let shares {
+                    let profit = priceDiff * shares
+                    statRow(
+                        "预计收益",
+                        viewModel.localizedFormat("净利润格式", profit >= 0 ? "+" : "-", abs(profit)),
+                        color: profit > 0 ? .red : (profit < 0 ? .green : .secondary)
+                    )
+                    Divider().padding(.leading)
+                    statRow("持仓市值", String(format: "¥%.2f", targetPrice * shares), color: nil)
+                } else {
+                    Text("输入股数看收益")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        .padding(.vertical, 13)
                 }
             }
             .background(Color(.systemBackground))

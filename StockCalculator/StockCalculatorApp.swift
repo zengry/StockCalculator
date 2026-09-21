@@ -17,7 +17,7 @@ struct StockCalculatorApp: App {
             ContentView()
         }
         // Mac 上的初始窗口尺寸
-        .defaultSize(width: 400, height: 600)
+        .defaultSize(width: 400, height: 720)
     }
 }
 

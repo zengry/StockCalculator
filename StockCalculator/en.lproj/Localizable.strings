@@ -81,3 +81,14 @@
 "股数时间格式" = "%lld sh · %@";
 "买入格式" = "Cost ¥%.2f";
 "费用格式" = "Fees ¥%.2f";
+/* Price scenario */
+"Profit" = "P&L";
+"Add Stock" = "Averaging";
+"推演" = "Scenario";
+"基准价" = "Base Price";
+"涨跌幅" = "Change";
+"目标价" = "Target Price";
+"涨跌额" = "Price Diff";
+"预计收益" = "Est. Profit";
+"持仓市值" = "Market Value";
+"输入股数看收益" = "Enter shares to see profit";
