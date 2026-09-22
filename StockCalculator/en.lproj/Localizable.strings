@@ -4,9 +4,9 @@
 "交易" = "Trade";
 "交易费用" = "Fees";
 "净利润" = "Net Profit";
-"净利润格式" = "%@¥%.2f";
+"净利润格式" = "%@¥%.3f";
 "毛利润" = "Gross Profit";
-"毛利润格式" = "%@¥%.2f";
+"毛利润格式" = "%@¥%.3f";
 "收益率格式" = "Return %@%.2f%%";
 "买入成本" = "Buy Cost";
 "卖出金额" = "Sell Amount";
@@ -38,7 +38,7 @@
 "平均成本" = "Avg Cost";
 "总股数格式" = "Total %@ sh";
 "浮动盈亏" = "Unrealized P&L";
-"浮动盈亏格式" = "%@¥%.2f  (%@%.2f%%)";
+"浮动盈亏格式" = "%@¥%.3f  (%@%.2f%%)";
 "总投入" = "Total Invested";
 "加仓金额" = "Add Amount";
 "新买入费用" = "New Buy Fees";
@@ -79,8 +79,8 @@
 "设置" = "Settings";
 "笔数格式" = "%ld";
 "股数时间格式" = "%lld sh · %@";
-"买入格式" = "Cost ¥%.2f";
-"费用格式" = "Fees ¥%.2f";
+"买入格式" = "Cost ¥%.3f";
+"费用格式" = "Fees ¥%.3f";
 /* Price scenario */
 "Profit" = "P&L";
 "Add Stock" = "Averaging";

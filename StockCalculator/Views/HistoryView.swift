@@ -167,7 +167,7 @@ struct HistoryRow: View {
                                     .background(record.stockCode == "未命名" ? Color(.systemGray5) : Color.blue.opacity(0.1))
                                     .cornerRadius(4)
                                 
-                                Text(String(format: "¥%.2f → ¥%.2f", record.buyPrice, record.sellPrice))
+                                Text(String(format: "¥%.3f → ¥%.3f", record.buyPrice, record.sellPrice))
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.primary)
@@ -178,7 +178,7 @@ struct HistoryRow: View {
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(String(format: "%@¥%.2f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
+                            Text(String(format: "%@¥%.3f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
                                 .font(.headline)
                                 .foregroundColor(record.netProfit > 0 ? .red : (record.netProfit < 0 ? .green : .secondary))
                             
@@ -209,7 +209,7 @@ struct HistoryRow: View {
                         Rectangle().fill(Color.blue).frame(width: 3, height: 13).cornerRadius(1.5)
                         Text("买入费用").font(.footnote).fontWeight(.semibold)
                         Spacer()
-                        Text(String(format: "¥%.2f", record.fees.buyCommission + record.fees.buyTransferFee)).font(.footnote).foregroundColor(.secondary)
+                        Text(String(format: "¥%.3f", record.fees.buyCommission + record.fees.buyTransferFee)).font(.footnote).foregroundColor(.secondary)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
@@ -226,7 +226,7 @@ struct HistoryRow: View {
                         Rectangle().fill(Color.orange).frame(width: 3, height: 13).cornerRadius(1.5)
                         Text("卖出费用").font(.footnote).fontWeight(.semibold)
                         Spacer()
-                        Text(String(format: "¥%.2f", record.fees.sellCommission + record.fees.stampDuty + record.fees.sellTransferFee)).font(.footnote).foregroundColor(.secondary)
+                        Text(String(format: "¥%.3f", record.fees.sellCommission + record.fees.stampDuty + record.fees.sellTransferFee)).font(.footnote).foregroundColor(.secondary)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
@@ -240,7 +240,7 @@ struct HistoryRow: View {
                 HStack {
                     Text("合计费用").font(.subheadline).fontWeight(.semibold)
                     Spacer()
-                    Text(String(format: "¥%.2f", record.fees.total)).font(.subheadline).fontWeight(.bold)
+                    Text(String(format: "¥%.3f", record.fees.total)).font(.subheadline).fontWeight(.bold)
                 }
                 .padding()
                 .background(Color(.systemGray6))
@@ -286,7 +286,7 @@ struct FeeDetailRow: View {
         HStack {
             Text(LocalizedStringKey(title)).font(.footnote).foregroundColor(.primary)
             Spacer()
-            Text(String(format: "¥%.2f", amount)).font(.footnote).foregroundColor(.primary)
+            Text(String(format: "¥%.3f", amount)).font(.footnote).foregroundColor(.primary)
         }
         .padding(.horizontal)
         .padding(.leading, 12)

@@ -104,9 +104,9 @@ struct CalculatorView: View {
             VStack(spacing: 0) {
                 InputRow(field: .stockCode, focusedField: $focusedField, icon: "number.circle.fill", iconColor: .blue,  title: "code", placeholder: "xxxxxx", text: $stockCode, keyboardType: .numberPad)
                 rowDivider
-                InputRow(field: .buyPrice, focusedField: $focusedField, icon: "arrow.down.circle.fill", iconColor: .red, title: "Buy", placeholder: "0.00", text: $buyPrice, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .buyPrice, focusedField: $focusedField, icon: "arrow.down.circle.fill", iconColor: .red, title: "Buy", placeholder: "0.000", text: $buyPrice, unit: "", keyboardType: .decimalPad)
                 rowDivider
-                InputRow(field: .sellPrice, focusedField: $focusedField, icon: "arrow.up.circle.fill", iconColor: .green, title: "Sell", placeholder: "0.00", text: $sellPrice, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .sellPrice, focusedField: $focusedField, icon: "arrow.up.circle.fill", iconColor: .green, title: "Sell", placeholder: "0.000", text: $sellPrice, unit: "", keyboardType: .decimalPad)
                 rowDivider
                 InputRow(field: .shares, focusedField: $focusedField, icon: "chart.bar", title: "Num", placeholder: "0", text: $shares, unit: "", keyboardType: .numberPad)
             }
@@ -153,15 +153,15 @@ struct CalculatorView: View {
     private var averagingSection: some View {
         VStack(spacing: 12) {
             VStack(spacing: 0) {
-                InputRow(field: .positionCost, focusedField: $focusedField, icon: "dollarsign.circle", iconColor: .blue, title: "成本", placeholder: "0.00", text: $positionCost, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .positionCost, focusedField: $focusedField, icon: "dollarsign.circle", iconColor: .blue, title: "成本", placeholder: "0.000", text: $positionCost, unit: "", keyboardType: .decimalPad)
                 rowDivider
                 InputRow(field: .positionShares, focusedField: $focusedField, icon: "shippingbox", iconColor: .blue, title: "股数", placeholder: "0", text: $positionShares, unit: "", keyboardType: .numberPad)
                 rowDivider
-                InputRow(field: .addPrice, focusedField: $focusedField, icon: "plus.circle.fill", iconColor: .orange, title: "加仓价", placeholder: "0.00", text: $addPrice, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .addPrice, focusedField: $focusedField, icon: "plus.circle.fill", iconColor: .orange, title: "加仓价", placeholder: "0.000", text: $addPrice, unit: "", keyboardType: .decimalPad)
                 rowDivider
                 InputRow(field: .addShares, focusedField: $focusedField, icon: "plus.square", iconColor: .orange, title: "加仓数", placeholder: "0", text: $addShares, unit: "", keyboardType: .numberPad)
                 rowDivider
-                InputRow(field: .currentPrice, focusedField: $focusedField, icon: "chart.line.uptrend.xyaxis", title: "当前市价", placeholder: "0.00", text: $currentPrice, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .currentPrice, focusedField: $focusedField, icon: "chart.line.uptrend.xyaxis", title: "当前市价", placeholder: "0.000", text: $currentPrice, unit: "", keyboardType: .decimalPad)
             }
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -180,7 +180,7 @@ struct CalculatorView: View {
     private var scenarioSection: some View {
         VStack(spacing: 12) {
             VStack(spacing: 0) {
-                InputRow(field: .probeBasePrice, focusedField: $focusedField, icon: "dollarsign.circle", iconColor: .blue, title: "基准价", placeholder: "0.00", text: $probeBasePrice, unit: "", keyboardType: .decimalPad)
+                InputRow(field: .probeBasePrice, focusedField: $focusedField, icon: "dollarsign.circle", iconColor: .blue, title: "基准价", placeholder: "0.000", text: $probeBasePrice, unit: "", keyboardType: .decimalPad)
                 rowDivider
                 InputRow(field: .probeShares, focusedField: $focusedField, icon: "chart.bar", title: "股数", placeholder: "选填", text: $probeShares, unit: "", keyboardType: .numberPad)
             }
@@ -482,7 +482,7 @@ struct ResultView: View {
             HStack {
                 Text("盈亏平衡价").font(.subheadline)
                 Spacer()
-                Text(String(format: "¥%.2f", breakevenPrice))
+                Text(String(format: "¥%.3f", breakevenPrice))
                     .font(.subheadline)
                     .fontWeight(.semibold)
             }
@@ -497,9 +497,9 @@ struct TradeStatsCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            statRow("买入成本", String(format: "¥%.2f", result.buyAmount), color: nil)
+            statRow("买入成本", String(format: "¥%.3f", result.buyAmount), color: nil)
             Divider().padding(.leading)
-            statRow("卖出金额", String(format: "¥%.2f", result.sellAmount), color: nil)
+            statRow("卖出金额", String(format: "¥%.3f", result.sellAmount), color: nil)
             Divider().padding(.leading)
             statRow(
                 "毛利润",
@@ -559,7 +559,7 @@ struct FeeBreakdownView: View {
             HStack {
                 Text("合计费用").fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "¥%.2f", fees.total)).fontWeight(.bold)
+                Text(String(format: "¥%.3f", fees.total)).fontWeight(.bold)
             }
             .padding()
             .background(Color(.systemGray6))
@@ -582,7 +582,7 @@ struct FeeSection: View {
                 Rectangle().fill(color).frame(width: 3, height: 13).cornerRadius(1.5)
                 Text(LocalizedStringKey(title)).font(.footnote).fontWeight(.semibold)
                 Spacer()
-                Text(String(format: "¥%.2f", subtotal)).font(.footnote).foregroundColor(.secondary)
+                Text(String(format: "¥%.3f", subtotal)).font(.footnote).foregroundColor(.secondary)
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -596,7 +596,7 @@ struct FeeSection: View {
                             Text(item.2).font(.caption2).foregroundColor(.secondary)
                         }
                         Spacer()
-                        Text(String(format: "¥%.2f", item.1)).font(.subheadline)
+                        Text(String(format: "¥%.3f", item.1)).font(.subheadline)
                     }
                     .padding(.horizontal)
                     .padding(.leading, 12)
@@ -642,11 +642,11 @@ struct AveragingResultView: View {
 
             // 「交易」明细卡
             VStack(spacing: 0) {
-                statRow("总投入", String(format: "¥%.2f", result.totalInvested), color: nil)
+                statRow("总投入", String(format: "¥%.3f", result.totalInvested), color: nil)
                 Divider().padding(.leading)
-                statRow("加仓金额", String(format: "¥%.2f", result.addAmount), color: nil)
+                statRow("加仓金额", String(format: "¥%.3f", result.addAmount), color: nil)
                 Divider().padding(.leading)
-                statRow("新买入费用", String(format: "¥%.2f", result.newBuyFee), color: nil)
+                statRow("新买入费用", String(format: "¥%.3f", result.newBuyFee), color: nil)
 
                 // 浮动盈亏（填了当前市价时显示，红涨绿跌）
                 if let profit = result.unrealizedProfit, let rate = result.unrealizedRate {
@@ -705,7 +705,7 @@ struct ScenarioResultView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.white.opacity(0.85))
 
-                    Text(String(format: "¥%.2f", targetPrice))
+                    Text(String(format: "¥%.3f", targetPrice))
                         .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         .foregroundColor(.white)
                         .textSelection(.enabled)
@@ -739,7 +739,7 @@ struct ScenarioResultView: View {
                         color: profit > 0 ? .red : (profit < 0 ? .green : .secondary)
                     )
                     Divider().padding(.leading)
-                    statRow("持仓市值", String(format: "¥%.2f", targetPrice * shares), color: nil)
+                    statRow("持仓市值", String(format: "¥%.3f", targetPrice * shares), color: nil)
                 } else {
                     Text("输入股数看收益")
                         .font(.subheadline)
