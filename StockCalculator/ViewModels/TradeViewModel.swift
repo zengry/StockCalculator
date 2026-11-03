@@ -211,12 +211,30 @@ class TradeViewModel: ObservableObject {
     }
 }
 
+// MARK: - 语义命名色（代码级资产：双主题自适应，全 app 统一取色入口，禁止散落硬编码）
+
+extension Color {
+    /// 涨 / 盈利（A 股红）
+    static let pnlUp = Color.red
+    /// 跌 / 亏损（A 股绿）
+    static let pnlDown = Color.green
+    /// 已命名股票代码胶囊底
+    static let stockTag = Color.blue.opacity(0.12)
+    /// 已命名股票代码胶囊文字
+    static let stockTagText = Color.blue
+}
+
+extension TradeRecord {
+    /// 是否为有效命名（未填代码时保存为"未命名"）
+    var hasName: Bool { stockCode != "未命名" }
+}
+
 // MARK: - 盈亏配色（A 股惯例：红涨绿跌）
 
 enum PnLStyle {
     static func color(_ value: Double) -> Color {
-        if value > 0 { return .red }
-        if value < 0 { return .green }
+        if value > 0 { return .pnlUp }
+        if value < 0 { return .pnlDown }
         return .secondary
     }
 }

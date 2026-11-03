@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockCalculator UI Redesign — iOS HIG</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand:        #0D9488;  /* 主色 teal：导航/主按钮/聚焦环 */
+    --brand-strong: #0F766E;
+    --accent:       #EA580C;  /* 强调 orange：仅用于 CTA 强调，不承载语义 */
+    --bg:           #F0FDFA;  /* 页面背景 */
+    --card:         #FFFFFF;
+    --grouped:      #F8FAFC;  /* 卡片组内次级面 = secondarySystemGroupedBackground */
+    --border:       #99F6E4;
+    --ink:          #134E4A;  /* 主文字 */
+    --ink-2:        #475569;  /* 次级文字 */
+    --up:           #DC2626;  /* 涨/盈利 红（A股约定） */
+    --down:         #16A34A;  /* 跌/亏损 绿 —— 与品牌 teal 保持距离，仅用于数字+符号 */
+    --err:          #B91C1C;  /* 校验错误（满足 4.5:1） */
+  }
+  body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: #0B1220; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .phone {
+    width: 390px; height: 844px; border-radius: 48px; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    border: 10px solid #1F2937; box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    position: relative; flex-shrink: 0;
+  }
+  .statusbar { height: 54px; display:flex; justify-content:space-between; align-items:center; padding: 0 28px; font-size: 15px; font-weight: 600; }
+  .card   { background: var(--card); border-radius: 10px; border: 1px solid rgba(153,246,228,.5); }
+  .card2  { background: var(--grouped); border-radius: 10px; border: 1px solid #E2E8F0; }
+  .label  { font-size: 12px; color: var(--ink-2); font-weight: 500; }
+  .value  { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row44  { min-height: 44px; }
+  .fix    { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:9999px;
+            background: var(--brand); color:#fff; font-size:10px; font-weight:700; margin-left:4px; vertical-align:2px; }
+  .seg    { display:flex; background:#E8F1F4; border-radius:9px; padding:2px; }
+  .seg-on { background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.12); color: var(--brand-strong); font-weight:600; }
+  .chip-up   { color: var(--up);   background: rgba(220,38,38,.10); }
+  .chip-down { color: var(--down); background: rgba(22,163,74,.10); }
+  .up   { color: var(--up); }
+  .down { color: var(--down); }
+  .tabbar { position:absolute; bottom:0; left:0; right:0; height:84px; background:rgba(255,255,255,.92);
+            backdrop-filter: blur(12px); border-top:1px solid #E2E8F0; display:flex; }
+  .tab    { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; color:var(--ink-2); }
+  .tab-on { color: var(--brand-strong); font-weight:600; }
+  .hero-bar { position:absolute; left:0; top:18px; bottom:18px; width:4px; border-radius:3px; }
+  .fixnote { font-size:11px; color:#94A3B8; line-height:1.5; }
+  .iosbtn  { min-height:50px; border-radius:12px; background:var(--brand); color:#fff; font-weight:600; font-size:17px;
+             display:flex; align-items:center; justify-content:center; gap:8px; }
+  .divider { height:1px; background:#E2E8F0; }
+  .badge-fix { background:#134E4A; color:#5EEAD4; }
+</style>
+</head>
+<body class="min-h-screen p-8 md:p-12">
+
+<!-- ============ 头部：设计令牌 ============ -->
+<header class="max-w-7xl mx-auto mb-10 text-white">
+  <p class="text-teal-400 font-semibold text-sm tracking-widest mb-2">STOCKCALCULATOR · iOS HIG REDESIGN</p>
+  <h1 class="text-3xl font-bold mb-3">高保真布局结构稿 — 计算器 / 历史 / 设置</h1>
+  <p class="text-slate-400 max-w-2xl text-sm leading-6">基于 ui-ux-pro-max 设计系统（Flat Design · Plus Jakarta Sans · 密度 6/标准动效）。圆角 标注 <span class="fix">n</span> 对应上一轮审查的修复点。</p>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 text-xs">
+    <div class="rounded-xl p-4 bg-slate-800/60 border border-slate-700">
+      <p class="text-slate-400 mb-2">品牌主色（导航/主按钮）</p>
+      <div class="flex gap-2">
+        <span class="w-8 h-8 rounded-lg" style="background:var(--brand)"></span>
+        <span class="w-8 h-8 rounded-lg" style="background:var(--accent)"></span>
+        <span class="w-8 h-8 rounded-lg border border-slate-600" style="background:var(--bg)"></span>
+      </div>
+      <p class="mono mt-2 text-slate-300">#0D9488 · #EA580C · #F0FDFA</p>
+    </div>
+    <div class="rounded-xl p-4 bg-slate-800/60 border border-slate-700">
+      <p class="text-slate-400 mb-2">盈亏语义色（与品牌色隔离）</p>
+      <div class="flex gap-2">
+        <span class="w-8 h-8 rounded-lg" style="background:var(--up)"></span>
+        <span class="w-8 h-8 rounded-lg" style="background:var(--down)"></span>
+      </div>
+      <p class="mono mt-2 text-slate-300">涨/盈 #DC2626 · 跌/亏 #16A34A<br>永远配 +/- 符号，不单传义</p>
+    </div>
+    <div class="rounded-xl p-4 bg-slate-800/60 border border-slate-700">
+      <p class="text-slate-400 mb-2">语义面层级</p>
+      <p class="mono text-slate-300 leading-5">systemGroupedBackground #F0FDFA<br>secondaryGrouped #F8FAFC<br>card #FFFFFF r=10</p>
+    </div>
+    <div class="rounded-xl p-4 bg-slate-800/60 border border-slate-700">
+      <p class="text-slate-400 mb-2">硬规范</p>
+      <p class="mono text-slate-300 leading-5">触控 ≥44pt · 间距 8 节奏<br>错误文案 #B91C1C ≥4.5:1<br>滚动指示器常显 · AX 降级单列</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 三屏并列 ============ -->
+<main class="max-w-7xl mx-auto flex flex-wrap gap-10 justify-center xl:justify-start">
+
+<!-- ==================== 屏 1：计算器（交易模式·已出结果） ==================== -->
+<section class="flex flex-col gap-3">
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="flex gap-1.5 items-center">
+    <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+    <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM8 5.5c-1.9 0-3.6.7-4.9 1.9l1.4 1.4A4.9 4.9 0 018 7.5c1.3 0 2.5.5 3.5 1.3l1.4-1.4A6.9 6.9 0 008 5.5zM8 1C5 1 2.4 2.2.4 4.1l1.4 1.4A8.9 8.9 0 018 3c2.5 0 4.7 1 6.2 2.5l1.4-1.4A10.9 10.9 0 008 1z"/></svg>
+    <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="15" height="8" rx="2" fill="currentColor"/><path d="M23 4v4c1-.3 1.6-1 1.6-2S24 4.3 23 4z" fill="currentColor" opacity=".4"/></svg>
+  </span></div>
+
+  <!-- 导航栏 -->
+  <div class="h-11 flex items-center justify-center relative px-4">
+    <span class="font-semibold text-[17px]">计算器</span>
+  </div>
+
+  <div class="overflow-y-auto" style="height: calc(100% - 54px - 44px - 84px - 74px); padding: 0 16px;">
+    <!-- 模式分段控件：本地化标签，不再混杂中英 -->
+    <div class="seg mb-4" role="tablist" aria-label="计算模式">
+      <button class="seg-on flex-1 py-2 text-[15px] rounded-[7px]">交易盈亏</button>
+      <button class="flex-1 py-2 text-[15px] rounded-[7px] text-slate-500">加仓成本</button>
+      <button class="flex-1 py-2 text-[15px] rounded-[7px] text-slate-500">涨跌推演</button>
+    </div>
+
+    <!-- 输入卡：2×2，AX 字号下降级单列（见下方结构注） -->
+    <div class="card p-4 mb-4">
+      <p class="label mb-3 flex items-center gap-1.5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V8m0 0L4 11m3-3l3 3m7-3v8m0 0l3-3m-3 3l-3-3"/></svg>交易<span class="fix">3</span></p>
+      <div class="grid grid-cols-2 gap-x-0">
+        <div class="pr-4 pb-4">
+          <p class="label mb-1.5">买入</p>
+          <p class="value mono text-right">10.250</p>
+        </div>
+        <div class="pl-4 pb-4 border-l border-slate-200">
+          <p class="label mb-1.5">卖出</p>
+          <p class="value mono text-right">11.080</p>
+        </div>
+        <div class="pr-4 pt-4 border-t border-slate-200">
+          <p class="label mb-1.5">代码</p>
+          <p class="value mono text-right text-slate-400">选填</p>
+        </div>
+        <div class="pl-4 pt-4 border-t border-l border-slate-200">
+          <p class="label mb-1.5">股数</p>
+          <div class="flex items-center justify-end gap-2">
+            <p class="value mono">1000</p>
+            <span class="text-[11px] font-semibold px-2 py-1 rounded-full" style="background:#CCFBF1;color:var(--brand-strong)">股</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero 结果卡：语义面色 + 系统圆角 + 左色条 -->
+    <div class="card2 relative p-4 mb-4 overflow-hidden">
+      <span class="hero-bar" style="background:var(--up)"></span>
+      <div class="flex items-center justify-between mb-1 pl-3">
+        <span class="text-[15px] font-medium text-slate-500">净利润</span>
+        <span class="text-[12px] font-semibold px-2.5 py-1 rounded-full chip-up">盈利<span class="fix">4</span></span>
+      </div>
+      <p class="mono pl-3 mb-2" style="font-size:34px;font-weight:600;color:var(--up)">+¥764.420</p>
+      <div class="flex items-baseline gap-2 pl-3">
+        <span class="text-[15px] text-slate-500">收益率</span>
+        <span class="mono text-[15px] font-semibold up">+7.46%</span>
+      </div>
+    </div>
+
+    <!-- 明细：次级层级 -->
+    <div class="card mb-4">
+      <p class="label px-4 pt-3 pb-1">明细</p>
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">买入成本</span><span class="mono text-[15px] text-slate-500">¥10,250.000</span></div>
+      <div class="divider mx-4"></div>
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">卖出金额</span><span class="mono text-[15px] text-slate-500">¥11,080.000</span></div>
+      <div class="divider mx-4"></div>
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">毛利润</span><span class="mono text-[15px] font-semibold up">+¥830.000</span></div>
+      <div class="divider mx-4"></div>
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">盈亏平衡价</span><span class="mono text-[15px] font-semibold">¥10.336</span></div>
+    </div>
+
+    <!-- 费用明细：DisclosureGroup 折叠，与详情页一致 -->
+    <div class="card mb-4">
+      <button class="w-full px-4 row44 flex items-center justify-between">
+        <span class="text-[15px] font-medium flex items-center gap-2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          费用明细
+        </span>
+        <span class="flex items-center gap-2"><span class="mono text-[15px] text-slate-500">¥65.58</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 底部固定主按钮：safeAreaInset -->
+  <div class="absolute left-0 right-0 px-4 pb-3" style="bottom:84px;background:rgba(240,253,250,.92);backdrop-filter:blur(12px);padding-top:10px;">
+    <button class="iosbtn w-full">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      保存记录
+    </button>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tabbar">
+    <div class="tab tab-on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>计算器</div>
+    <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v6h6"/></svg>历史</div>
+    <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </div>
+</div>
+<!-- 屏1 结构注 -->
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4 text-slate-300">
+  <p class="text-teal-400 font-semibold text-xs mb-2">屏 1 修复点（计算器）</p>
+  <ul class="fixnote space-y-1.5 text-slate-300">
+    <li><span class="fix">1</span> 模式标签全本地化：rawValue 仅作 id，显示走 LocalizedStringKey，中英分离。</li>
+    <li><span class="fix">2</span> 所有金额经 <code class="mono">money(_:)</code>（NumberFormatter + locale），zh 显示 ¥、en 显示 $，绝不硬编码。</li>
+    <li><span class="fix">3</span> 2×2 网格 → <code class="mono">ViewThatFits</code>：AX 级别自动降级单列堆叠；移除全部 minimumScaleFactor。</li>
+    <li><span class="fix">4</span> Hero 卡背景改 <code class="mono">secondarySystemGroupedBackground</code>，圆角 10 对齐系统；删除 <code class="mono">scrollIndicators(.hidden)</code>。</li>
+    <li><span class="fix">5</span> 非法输入（如卖出 ≤ 0）在字段下方内联 caption 错误提示，不再静默消失。</li>
+  </ul>
+</div>
+</section>
+
+<!-- ==================== 屏 2：历史（分组列表 + Undo 轻提示） ==================== -->
+<section class="flex flex-col gap-3">
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="mono text-[13px] tracking-tight">●●●</span></div>
+  <div class="h-11 flex items-center justify-center"><span class="font-semibold text-[17px]">历史记录</span></div>
+
+  <div class="overflow-y-auto" style="height: calc(100% - 54px - 44px - 84px); padding: 0 16px;">
+
+    <!-- 汇总卡：总盈亏一目了然 -->
+    <div class="card2 p-4 mb-4 flex items-center justify-between">
+      <div>
+        <p class="label mb-0.5">累计净利润</p>
+        <p class="mono text-[22px] font-semibold up">+¥2,431.180</p>
+      </div>
+      <span class="text-[12px] font-semibold px-2.5 py-1 rounded-full" style="background:#E8F1F4;color:var(--ink-2)">共 6 笔</span>
+    </div>
+
+    <!-- 日期分组：Calendar.startOfDay 分组，header 显示日盈亏 -->
+    <p class="label px-1 mb-2 flex justify-between items-baseline">
+      <span>10月31日 星期五</span>
+      <span class="mono font-semibold up">+¥764.420</span>
+    </p>
+    <div class="card mb-5 divide-y divide-slate-100">
+      <!-- 行：无固定宽度列，AX 字号自然换行 -->
+      <div class="px-4 py-3">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="text-[12px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(13,148,136,.12);color:var(--brand-strong)">600519</span>
+          <span class="mono text-[14px] text-slate-600">¥10.250 <span class="text-slate-300">→</span> ¥11.080</span>
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <span class="text-[13px] text-slate-500">1,000 股 · 14:32</span>
+          <div class="text-right shrink-0">
+            <p class="mono text-[16px] font-semibold up leading-tight">+¥764.420</p>
+            <p class="mono text-[12px] font-semibold up">+7.46%</p>
+          </div>
+        </div>
+      </div>
+      <div class="px-4 py-3 opacity-80">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="text-[12px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">未命名</span>
+          <span class="mono text-[14px] text-slate-600">¥23.400 <span class="text-slate-300">→</span> ¥23.100</span>
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <span class="text-[13px] text-slate-500">500 股 · 10:05</span>
+          <div class="text-right shrink-0">
+            <p class="mono text-[16px] font-semibold down leading-tight">-¥191.160</p>
+            <p class="mono text-[12px] font-semibold down">-1.63%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="label px-1 mb-2 flex justify-between items-baseline">
+      <span>10月28日 星期二</span>
+      <span class="mono font-semibold up">+¥1,857.920</span>
+    </p>
+    <div class="card divide-y divide-slate-100">
+      <div class="px-4 py-3 opacity-80">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="text-[12px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(13,148,136,.12);color:var(--brand-strong)">300750</span>
+          <span class="mono text-[14px] text-slate-600">¥185.00 <span class="text-slate-300">→</span> ¥192.40</span>
+        </div>
+        <div class="flex items-end justify-between gap-3">
+          <span class="text-[13px] text-slate-500">200 股 · 13:58</span>
+          <div class="text-right shrink-0">
+            <p class="mono text-[16px] font-semibold up leading-tight">+¥1,857.920</p>
+            <p class="mono text-[12px] font-semibold up">+4.00%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Undo Snackbar：滑动删除后 5 秒可撤销，替代双重确认弹窗 -->
+  <div class="absolute left-4 right-4 flex items-center justify-between rounded-xl px-4 py-3 text-white shadow-xl"
+       style="bottom:100px;background:#134E4A;">
+    <span class="text-[14px]">已删除 1 条记录</span>
+    <button class="text-[14px] font-bold text-teal-300">撤销<span class="fix" style="background:#5EEAD4;color:#134E4A">1</span></button>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>计算器</div>
+    <div class="tab tab-on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v6h6"/></svg>历史</div>
+    <div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>设置</div>
+  </div>
+</div>
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4">
+  <p class="text-teal-400 font-semibold text-xs mb-2">屏 2 修复点（历史）</p>
+  <ul class="fixnote space-y-1.5 text-slate-300">
+    <li><span class="fix">1</span> 滑动即删 + Undo Snackbar（5 秒），删除确认弹窗移除。</li>
+    <li><span class="fix">2</span> 分组与排序基于 <code class="mono">Date + Calendar.startOfDay</code>，不再做字符串截断比较。</li>
+    <li><span class="fix">3</span> 详情页标题用 <code class="mono">Text(code)</code>，不查本地化表。</li>
+    <li><span class="fix">4</span> 行内右列改自然宽度 + 弹性换行，删除 112pt 固定宽与缩字。</li>
+    <li><span class="fix">5</span> 新增顶部"累计净利润"汇总卡；详情页买卖费用合并为与计算器一致的折叠组。</li>
+  </ul>
+</div>
+</section>
+
+<!-- ==================== 屏 3：设置（内联校验态） ==================== -->
+<section class="flex flex-col gap-3">
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="mono text-[13px]">●●●</span></div>
+  <div class="h-11 flex items-center justify-center"><span class="font-semibold text-[17px]">费率设置</span></div>
+
+  <div class="overflow-y-auto" style="height: calc(100% - 54px - 44px - 84px); padding: 0 16px;">
+
+    <!-- 费率组：错误内联到行，不再放 footer -->
+    <p class="label px-1 mb-2">A股交易费率</p>
+    <div class="card mb-5 divide-y divide-slate-100">
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-[15px]">佣金费率</span>
+          <span class="flex items-baseline gap-1.5">
+            <span class="mono text-[17px] font-semibold">12</span><span class="text-[13px] text-slate-500">%</span>
+          </span>
+        </div>
+        <p class="text-[13px] font-medium mt-1.5 flex items-center gap-1.5" style="color:var(--err)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+          已按上限调整为 10%<span class="fix">1</span>
+        </p>
+      </div>
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-[15px]">最低佣金</span>
+          <span class="flex items-baseline gap-1.5"><span class="mono text-[17px] font-semibold">5</span><span class="text-[13px] text-slate-500">元/笔</span></span>
+        </div>
+        <p class="text-[12px] text-slate-500 mt-1">不足则按最低收取</p>
+      </div>
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-[15px]">印花税率</span>
+          <span class="flex items-baseline gap-1.5"><span class="mono text-[17px] font-semibold">0.05</span><span class="text-[13px] text-slate-500">%</span></span>
+        </div>
+        <p class="text-[12px] text-slate-500 mt-1">仅卖出时收取</p>
+      </div>
+      <div class="px-4 py-3">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-[15px]">过户费率</span>
+          <span class="flex items-baseline gap-1.5"><span class="mono text-[17px] font-semibold">0.001</span><span class="text-[13px] text-slate-500">%</span></span>
+        </div>
+        <p class="text-[12px] text-slate-500 mt-1">买卖双边均收</p>
+      </div>
+    </div>
+
+    <!-- 推演上限 -->
+    <p class="label px-1 mb-2">涨跌推演</p>
+    <div class="card mb-5">
+      <div class="px-4 row44 flex items-center justify-between">
+        <span class="text-[15px]">涨跌幅上限</span>
+        <span class="flex items-center gap-1.5 text-[15px] text-slate-500">10%（主板）
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></span>
+      </div>
+    </div>
+
+    <!-- 外观与语言 -->
+    <p class="label px-1 mb-2">外观与语言</p>
+    <div class="card mb-5 divide-y divide-slate-100">
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">外观</span><span class="text-[15px] text-slate-500">跟随系统</span></div>
+      <div class="px-4 row44 flex items-center justify-between"><span class="text-[15px]">语言</span><span class="text-[15px] text-slate-500">中文</span></div>
+    </div>
+
+    <!-- 恢复默认值：破坏操作需确认，按钮样式标准化 -->
+    <p class="label px-1 mb-2">数据</p>
+    <div class="card mb-5">
+      <button class="w-full row44 flex items-center justify-center gap-2 text-[15px] font-semibold" style="color:var(--err)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9M3 3v6h6"/></svg>
+        恢复默认值<span class="fix">3</span>
+      </button>
+    </div>
+    <p class="text-center text-[12px] text-slate-400 mb-4">版本 1.2.0 (34) · 项目主页</p>
+  </div>
+
+  <!-- 数字键盘 toolbar：设置页补齐"完成" -->
+  <div class="absolute left-0 right-0 px-3" style="bottom:84px;background:#D1D8E0;">
+    <div class="flex justify-end items-center h-11">
+      <button class="text-[16px] font-semibold px-4" style="color:var(--brand-strong)">完成<span class="fix" style="background:var(--brand)">4</span></button>
+    </div>
+    <div class="grid grid-cols-4 gap-1 pb-2">
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">1</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">2</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">3</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">4</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">5</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">6</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">7</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">8</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">9</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">.</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center text-[20px] font-medium">0</div>
+      <div class="h-12 rounded-md bg-white flex items-center justify-center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 5H9m10 7H5m14 7H3"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar" style="display:none"></div>
+</div>
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4">
+  <p class="text-teal-400 font-semibold text-xs mb-2">屏 3 修复点（设置）</p>
+  <ul class="fixnote space-y-1.5 text-slate-300">
+    <li><span class="fix">1</span> 校验内联到对应行下方（错误色 #B91C1C ≥4.5:1 + 图标，不只靠颜色）；footer 只保留说明文案。</li>
+    <li><span class="fix">2</span> 废弃 <code class="mono">.orange</code>，全部错误/警告走语义错误色。</li>
+    <li><span class="fix">3</span> "恢复默认值"点击弹 confirmationDialog 确认；样式从 .plain 文字改标准按钮行。</li>
+    <li><span class="fix">4</span> decimalPad 复用 keyboard toolbar"完成"，与计算器一致。</li>
+    <li><span class="fix">5</span> 取消 <code class="mono">onChange(of: settings)</code> 全局回写；仅 onAppear/失焦同步，commit 比较 old/new 防竞态。</li>
+  </ul>
+</div>
+</section>
+</main>
+
+<!-- ============ 布局结构速查（Markdown 语义） ============ -->
+<section class="max-w-7xl mx-auto mt-14 text-white">
+  <h2 class="text-xl font-bold mb-4">布局结构速查（层级树）</h2>
+  <div class="grid md:grid-cols-3 gap-6 text-[13px]">
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">CalculatorView</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">NavigationStack
+├─ Form
+│  ├─ Section[模式]
+│  │  └─ Picker(segmented) ← 本地化标签
+│  ├─ Section[交易] (trade)
+│  │  └─ ViewThatFits { 2×2 Grid | VStack 单列 } ← AX 降级
+│  ├─ Section[Hero结果卡]
+│  │  └─ secondaryGrouped 底 · r10 · 左色条
+│  ├─ Section[明细] LabeledContent ×4
+│  └─ Section[费用] DisclosureGroup
+├─ safeAreaInset(bottom): 保存主按钮(borderedProminent)
+└─ toolbar(keyboard): 完成
+   内联错误: 字段下 caption(err色)</pre>
+    </div>
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">HistoryView</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">NavigationStack
+├─ List(insetGrouped) 分组 = Calendar.startOfDay
+│  ├─ header: 日期 + 当日净盈亏(红绿+符号)
+│  └─ row: 胶囊代码 + 买→卖 + 盈亏
+│     （无固定宽列 · AX 自然换行）
+├─ 顶部汇总卡: 累计净利润
+├─ swipeActions( destructive ) → 直接删除
+└─ Undo Snackbar(5s) 替代确认弹窗
+RecordDetailView
+├─ navigationTitle = Text(code)
+└─ 买卖费用合并为 DisclosureGroup</pre>
+    </div>
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">SettingsView</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">NavigationStack
+├─ Form
+│  ├─ Section[费率] SettingRow ×4
+│  │  ├─ TextField(trailing) + 单位
+│  │  └─ inlineError?: caption(err色+图标)
+│  ├─ Section[推演上限] Picker
+│  ├─ Section[外观/语言] Picker ×2
+│  ├─ Section[数据] 恢复默认值
+│  │  → confirmationDialog 确认
+│  └─ Section[关于] 版本 / 主页
+├─ toolbar(keyboard): 完成
+└─ 状态同步: onAppear + 失焦 commit
+   （移除 settings 全局 onChange 回写）</pre>
+    </div>
+  </div>
+  <p class="text-slate-500 text-xs mt-8 text-center">Generated with ui-ux-pro-max · Flat Design · Plus Jakarta Sans · 涨红 #DC2626 / 跌绿 #16A34A（A股约定，永不单传义）</p>
+</section>
+</body>
+</html>

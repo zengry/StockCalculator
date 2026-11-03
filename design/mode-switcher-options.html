@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>计算器模式切换 — 三方案高保真布局</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --phone-bg: #1C1C1E;   /* systemBackground dark */
+    --card:     #2C2C2E;   /* secondarySystemGroupedBackground dark */
+    --card2:    #3A3A3C;   /* tertiary fill */
+    --sep:      rgba(84,84,88,.6);
+    --ink:      #FFFFFF;
+    --ink-2:    rgba(235,235,245,.6);
+    --ink-3:    rgba(235,235,245,.3);
+    --brand:    #0D9488;
+    --seg-bg:   rgba(120,120,128,.24);
+    --seg-on:   #636366;   /* dark 模式分段选中底 */
+  }
+  body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: #0B1220; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .phone {
+    width: 390px; border-radius: 48px; overflow: hidden;
+    background: var(--phone-bg); color: var(--ink);
+    border: 10px solid #000; box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    position: relative; flex-shrink: 0;
+  }
+  .statusbar { height: 54px; display:flex; justify-content:space-between; align-items:center; padding: 0 28px; font-size: 15px; font-weight: 600; }
+  .seg    { display:flex; background: var(--seg-bg); border-radius: 9px; padding: 2px; }
+  .seg-item { flex:1; display:flex; align-items:center; justify-content:center; gap:5px; padding: 8px 0; font-size: 14px; font-weight: 400; color: var(--ink); border-radius: 7px; }
+  .seg-on { background: var(--seg-on); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .navbtn { color: var(--brand); font-size: 17px; }
+  .ghostcard { background: var(--card); border-radius: 10px; opacity: .45; }
+  .modecard { background: var(--card); border: 1.5px solid transparent; border-radius: 14px; padding: 14px; }
+  .modecard-on { border-color: var(--brand); background: rgba(13,148,136,.14); }
+  .fade-h { position:relative; }
+  .fade-h::after { content:''; position:absolute; left:0; right:0; bottom:0; height:160px; background:linear-gradient(to bottom, transparent, var(--phone-bg)); pointer-events:none; }
+  .opt-tag { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:9999px; background:var(--brand); color:#fff; font-size:12px; font-weight:700; }
+</style>
+</head>
+<body class="min-h-screen p-8 md:p-12">
+
+<header class="max-w-7xl mx-auto mb-10 text-white">
+  <p class="text-teal-400 font-semibold text-sm tracking-widest mb-2">STOCKCALCULATOR · MODE SWITCHER OPTIONS</p>
+  <h1 class="text-3xl font-bold mb-4">计算器模式切换 — 三方案高保真布局</h1>
+  <p class="text-slate-400 max-w-2xl text-sm leading-6">深色模式（对齐当前截图环境）。三方案共用前提：rawValue 仅作 id，显示走本地化 key（交易盈亏 / 加仓成本 / 涨跌推演）。</p>
+
+  <!-- 方案对比 -->
+  <div class="overflow-x-auto mt-6">
+    <table class="text-sm text-slate-300 w-full max-w-4xl">
+      <thead>
+        <tr class="text-left text-slate-500 text-xs uppercase tracking-wider">
+          <th class="pb-3 pr-6">维度</th><th class="pb-3 pr-6">A · 导航栏分段</th><th class="pb-3 pr-6">B · A+图标</th><th class="pb-3">C · 模式卡</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="py-3 pr-6 text-slate-400">纵向占用</td><td class="pr-6">省 60pt（标题二合一）</td><td class="pr-6">同 A</td><td>多占 ~110pt</td></tr>
+        <tr><td class="py-3 pr-6 text-slate-400">扫读速度</td><td class="pr-6">中（纯文本）</td><td class="pr-6">快（图标锚点）</td><td>最快（图标+副文案）</td></tr>
+        <tr><td class="py-3 pr-6 text-slate-400">实现成本</td><td class="pr-6">低（移位置）</td><td class="pr-6">低</td><td>中（新组件+AX 降级）</td></tr>
+        <tr><td class="py-3 pr-6 text-slate-400">记忆点</td><td class="pr-6">无</td><td class="pr-6">弱</td><td>强（胶囊语言统一）</td></tr>
+        <tr><td class="py-3 pr-6 text-slate-400">推荐度</td><td class="pr-6 text-teal-400 font-semibold">★★★★★ 先上</td><td class="pr-6 text-teal-400 font-semibold">★★★★ 可叠加</td><td class="text-slate-400">★★★ 迭代用</td></tr>
+      </tbody>
+    </table>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto flex flex-wrap gap-10 justify-center xl:justify-start">
+
+<!-- ============ 方案 A：导航栏分段控件 ============ -->
+<section class="flex flex-col gap-3">
+<div class="phone fade-h">
+  <div class="statusbar"><span class="text-white">9:41</span><span class="mono text-[13px] text-white">●●●</span></div>
+
+  <!-- 导航栏：分段控件占据 principal 位，取代标题 -->
+  <div class="h-11 px-4 flex items-center justify-between">
+    <span class="w-14"></span>
+    <div class="seg w-[248px]">
+      <span class="seg-item seg-on">交易盈亏</span>
+      <span class="seg-item">加仓成本</span>
+      <span class="seg-item">涨跌推演</span>
+    </div>
+    <span class="w-14"></span>
+  </div>
+
+  <!-- 内容区（示意，半透明示意延续） -->
+  <div class="px-4 pt-3 space-y-3">
+    <div class="ghostcard p-4">
+      <p class="text-[12px] mb-3" style="color:var(--ink-2)">交易</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div><p class="text-[12px]" style="color:var(--ink-2)">买入</p><p class="mono text-[17px] font-semibold text-right">10.250</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">卖出</p><p class="mono text-[17px] font-semibold text-right">11.080</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">代码</p><p class="mono text-[17px] text-right" style="color:var(--ink-3)">选填</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">股数</p><p class="mono text-[17px] font-semibold text-right">1000</p></div>
+      </div>
+    </div>
+    <div class="ghostcard p-4">
+      <div class="flex justify-between items-center mb-2 pl-2"><span class="text-[14px]" style="color:var(--ink-2)">净利润</span><span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background:rgba(220,38,38,.15);color:#F87171">盈利</span></div>
+      <p class="mono pl-2 text-[34px] font-light" style="color:#F87171">+764.420</p>
+    </div>
+  </div>
+</div>
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4 text-slate-300">
+  <p class="text-teal-400 font-semibold text-xs mb-2 flex items-center gap-2"><span class="opt-tag">A</span>导航栏分段控件（推荐先上）</p>
+  <ul class="text-[12px] text-slate-400 space-y-1.5 leading-5">
+    <li>分段控件上移 <code class="mono text-slate-300">ToolbarItemGroup(placement: .principal)</code>，删除"计算器"标题 → 拆掉双层 chrome</li>
+    <li><code class="mono text-slate-300">.fixedSize()</code> 固定自然宽，左右留 56pt 占位保持居中</li>
+    <li>整页省 60+pt，输入卡上移，首屏可见更多结果</li>
+    <li>必须配套：rawValue 改稳定 id，显示走 <code class="mono text-slate-300">titleKey</code></li>
+  </ul>
+</div>
+</section>
+
+<!-- ============ 方案 B：A + 图标分段 ============ -->
+<section class="flex flex-col gap-3">
+<div class="phone fade-h">
+  <div class="statusbar"><span class="text-white">9:41</span><span class="mono text-[13px] text-white">●●●</span></div>
+
+  <!-- 导航栏：图标+文本分段 -->
+  <div class="h-11 px-4 flex items-center justify-between">
+    <span class="w-14"></span>
+    <div class="seg w-[268px]">
+      <span class="seg-item seg-on">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V8m0 0L4 11m3-3l3 3m7-3v8m0 0l3-3m-3 3l-3-3"/></svg>
+        交易盈亏
+      </span>
+      <span class="seg-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8m-4-4h8"/></svg>
+        加仓成本
+      </span>
+      <span class="seg-item">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        涨跌推演
+      </span>
+    </div>
+    <span class="w-14"></span>
+  </div>
+
+  <div class="px-4 pt-3 space-y-3">
+    <div class="ghostcard p-4">
+      <p class="text-[12px] mb-3" style="color:var(--ink-2)">交易</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div><p class="text-[12px]" style="color:var(--ink-2)">买入</p><p class="mono text-[17px] font-semibold text-right">10.250</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">卖出</p><p class="mono text-[17px] font-semibold text-right">11.080</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">代码</p><p class="mono text-[17px] text-right" style="color:var(--ink-3)">选填</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">股数</p><p class="mono text-[17px] font-semibold text-right">1000</p></div>
+      </div>
+    </div>
+    <div class="ghostcard p-4">
+      <p class="mono pl-2 text-[34px] font-light" style="color:#F87171">+764.420</p>
+    </div>
+  </div>
+</div>
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4 text-slate-300">
+  <p class="text-teal-400 font-semibold text-xs mb-2 flex items-center gap-2"><span class="opt-tag">B</span>A + 段内图标（可叠加）</p>
+  <ul class="text-[12px] text-slate-400 space-y-1.5 leading-5">
+    <li>段内容 <code class="mono text-slate-300">Text → Label(titleKey, systemImage:)</code>，图标锚点让三模式一眼可辨</li>
+    <li>图标规范：统一线框、复杂度对齐（双向箭头 / 加号圆 / 折线），<code class="mono text-slate-300">imageScale(.small)</code></li>
+    <li>风险：图标+中文双字宽段，总宽约 268pt，SE 等小屏需确认不溢出（必要时仅图标）</li>
+    <li>切换时图标可叠 <code class="mono text-slate-300">symbolEffect(.bounce, value: mode)</code> 微动效</li>
+  </ul>
+</div>
+</section>
+
+<!-- ============ 方案 C：三张模式卡 ============ -->
+<section class="flex flex-col gap-3">
+<div class="phone fade-h">
+  <div class="statusbar"><span class="text-white">9:41</span><span class="mono text-[13px] text-white">●●●</span></div>
+
+  <!-- 导航栏：标题保留 -->
+  <div class="h-11 flex items-center justify-center"><span class="font-semibold text-[17px]">计算器</span></div>
+
+  <!-- 三张模式卡：横向等宽，选中卡品牌描边+浅底 -->
+  <div class="px-4 pt-2">
+    <div class="grid grid-cols-3 gap-2.5">
+      <div class="modecard modecard-on">
+        <svg class="mb-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2DD4BF" stroke-width="2"><path d="M7 16V8m0 0L4 11m3-3l3 3m7-3v8m0 0l3-3m-3 3l-3-3"/></svg>
+        <p class="text-[13px] font-semibold leading-tight">交易盈亏</p>
+        <p class="text-[10px] mt-0.5 leading-snug" style="color:var(--ink-2)">买入卖出<br>算净利润</p>
+      </div>
+      <div class="modecard">
+        <svg class="mb-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-2)"><circle cx="12" cy="12" r="9"/><path d="M12 8v8m-4-4h8"/></svg>
+        <p class="text-[13px] font-semibold leading-tight" style="color:var(--ink-2)">加仓成本</p>
+        <p class="text-[10px] mt-0.5 leading-snug" style="color:var(--ink-3)">补仓摊薄<br>算平均价</p>
+      </div>
+      <div class="modecard">
+        <svg class="mb-2" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--ink-2)"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        <p class="text-[13px] font-semibold leading-tight" style="color:var(--ink-2)">涨跌推演</p>
+        <p class="text-[10px] mt-0.5 leading-snug" style="color:var(--ink-3)">滑一滑看<br>目标收益</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-4 pt-3 space-y-3">
+    <div class="ghostcard p-4">
+      <p class="text-[12px] mb-3" style="color:var(--ink-2)">交易</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div><p class="text-[12px]" style="color:var(--ink-2)">买入</p><p class="mono text-[17px] font-semibold text-right">10.250</p></div>
+        <div><p class="text-[12px]" style="color:var(--ink-2)">卖出</p><p class="mono text-[17px] font-semibold text-right">11.080</p></div>
+      </div>
+    </div>
+    <div class="ghostcard p-4"><p class="mono pl-2 text-[34px] font-light" style="color:#F87171">+764.420</p></div>
+  </div>
+</div>
+<div class="max-w-[390px] rounded-xl bg-slate-800/60 border border-slate-700 p-4 text-slate-300">
+  <p class="text-teal-400 font-semibold text-xs mb-2 flex items-center gap-2"><span class="opt-tag">C</span>三张模式卡（个性化迭代）</p>
+  <ul class="text-[12px] text-slate-400 space-y-1.5 leading-5">
+    <li>废弃分段控件：图标 + 标题 + 一句副文案，选中卡品牌色描边 1.5pt + 14% 浅底</li>
+    <li>副文案说"人话"（算净利润/算平均价/看目标收益），解决"Averaging 看不懂"问题</li>
+    <li>与代码胶囊同一圆角语言，记忆点最强</li>
+    <li>成本：多 ~110pt 纵向占用；需处理 AX 降级（<code class="mono text-slate-300">ViewThatFits</code> 降为竖排三行）；切换动效用 <code class="mono text-slate-300">.snappy</code> 描边色过渡</li>
+  </ul>
+</div>
+</section>
+</main>
+
+<!-- ============ 结构速查 ============ -->
+<section class="max-w-7xl mx-auto mt-14 text-white">
+  <h2 class="text-xl font-bold mb-4">SwiftUI 结构速查</h2>
+  <div class="grid md:grid-cols-3 gap-6 text-[13px]">
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">方案 A / B 共用骨架</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">NavigationStack
+├─ CalculatorView
+│  └─ Form
+│     ├─ [删除原模式 Section]
+│     └─ ...各模式输入区
+└─ toolbar
+   └─ ToolbarItemGroup(placement: .principal)
+      └─ Picker(segmented)
+         ├─ Text/Label(titleKey).tag
+         └─ .fixedSize()
+enum CalculatorMode: String {
+  case trade, averaging, scenario
+  var titleKey: LocalizedStringKey { ... }
+}</pre>
+    </div>
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">方案 C 骨架</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">NavigationStack
+├─ navigationTitle("计算器")
+└─ CalculatorView
+   └─ Form
+      ├─ Section[无 header]
+      │  └─ ViewThatFits {
+      │       HStack { ModeCard ×3 }   // 常规
+      │       VStack { ModeCard ×3 }   // AX 降级
+      │     }
+      └─ ...各模式输入区
+
+ModeCard: 图标 + 标题 + 副文案
+  选中: .overlay 品牌色描边 r14
+        + .background(brand.opacity(0.14))</pre>
+    </div>
+    <div class="rounded-xl bg-slate-800/60 border border-slate-700 p-5">
+      <p class="text-teal-400 font-semibold mb-3 mono">共用文案变更</p>
+      <pre class="mono text-slate-300 leading-6 overflow-x-auto">// strings（zh key → en value）
+"交易盈亏" = "Trade"
+"加仓成本" = "Averaging"
+"涨跌推演" = "Price Scenario"
+// 旧 key 删除:
+// "Profit" / "Add Stock" / "推演"
+
+// 切换反馈
+.sensoryFeedback(.selection, trigger: mode)
+// B 方案图标微动效
+.symbolEffect(.bounce, value: mode)</pre>
+    </div>
+  </div>
+  <p class="text-slate-500 text-xs mt-8 text-center">Generated with ios-design-agent-skill · 深色语义色：systemBackground #1C1C1E / secondaryGrouped #2C2C2E · 涨红 #F87171（dark 适配）</p>
+</section>
+</body>
+</html>

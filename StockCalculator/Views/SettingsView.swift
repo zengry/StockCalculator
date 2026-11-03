@@ -19,7 +19,12 @@ struct SettingsView: View {
     @State private var minCommissionText = ""
     @State private var stampDutyText = ""
     @State private var transferFeeText = ""
-    @State private var validationNote: String?
+
+    // 校验反馈：按字段内联到对应行（不再统一放 Section footer）
+    @State private var validationField: FeeField?
+    @State private var validationText = ""
+
+    @State private var showResetConfirm = false
 
     private let commissionRange: ClosedRange<Double> = 0...10
     private let minCommissionRange: ClosedRange<Double> = 0...10000
@@ -29,28 +34,46 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
-                SettingRow(title: "佣金费率", subtitle: "买卖双边均收", unit: "%", text: commissionBinding)
+                SettingRow(
+                    title: "佣金费率",
+                    subtitle: "买卖双边均收",
+                    unit: "%",
+                    error: validationField == .commission ? validationText : nil,
+                    text: commissionBinding
+                )
                     .focused($focusedField, equals: .commission)
-                SettingRow(title: "最低佣金", subtitle: "不足则按最低收取", unit: "元/笔", text: minCommissionBinding)
+                SettingRow(
+                    title: "最低佣金",
+                    subtitle: "不足则按最低收取",
+                    unit: "元/笔",
+                    error: validationField == .minCommission ? validationText : nil,
+                    text: minCommissionBinding
+                )
                     .focused($focusedField, equals: .minCommission)
-                SettingRow(title: "印花税率", subtitle: "仅卖出时收取", unit: "%", text: stampDutyBinding)
+                SettingRow(
+                    title: "印花税率",
+                    subtitle: "仅卖出时收取",
+                    unit: "%",
+                    error: validationField == .stampDuty ? validationText : nil,
+                    text: stampDutyBinding
+                )
                     .focused($focusedField, equals: .stampDuty)
-                SettingRow(title: "过户费率", subtitle: "买卖双边均收", unit: "%", text: transferFeeBinding)
+                SettingRow(
+                    title: "过户费率",
+                    subtitle: "买卖双边均收",
+                    unit: "%",
+                    error: validationField == .transferFee ? validationText : nil,
+                    text: transferFeeBinding
+                )
                     .focused($focusedField, equals: .transferFee)
             } header: {
                 Text("A股交易费率")
             } footer: {
-                VStack(spacing: 8) {
-                    if let note = validationNote {
-                        Text(note)
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .multilineTextAlignment(.center)
-                    }
-                    Text("默认费率说明")
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
+                Text("默认费率说明")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
 
             Section {
@@ -69,6 +92,8 @@ struct SettingsView: View {
                 Text("涨跌推演")
             } footer: {
                 Text("推演范围说明")
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
             }
 
@@ -97,7 +122,9 @@ struct SettingsView: View {
             }
 
             Section {
-                Button(action: resetSettings) {
+                Button {
+                    showResetConfirm = true
+                } label: {
                     Label(
                         showResetSuccess ? "已恢复默认值" : "恢复默认值",
                         systemImage: showResetSuccess ? "checkmark.circle.fill" : "arrow.counterclockwise"
@@ -127,6 +154,19 @@ struct SettingsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollDismissesKeyboard(.interactively)
         .sensoryFeedback(.success, trigger: resetCount)
+        .sensoryFeedback(.warning, trigger: showResetConfirm)
+        .confirmationDialog(
+            LocalizedStringKey("确认恢复默认费率"),
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive, action: resetSettings) {
+                Text(LocalizedStringKey("恢复默认值"))
+            }
+            Button(role: .cancel) {}
+        } message: {
+            Text(LocalizedStringKey("恢复默认说明"))
+        }
         .onAppear(perform: syncTextsFromSettings)
         .onChange(of: viewModel.settings) { _, _ in
             syncTextsFromSettings()
@@ -192,7 +232,8 @@ struct SettingsView: View {
 
         guard let value = Double(text) else {
             revert(field, keyPath: keyPath)
-            validationNote = viewModel.localized("输入无效已还原")
+            validationField = field
+            validationText = viewModel.localized("输入无效已还原")
             return
         }
 
@@ -200,9 +241,11 @@ struct SettingsView: View {
         viewModel.settings[keyPath: keyPath] = clamped
 
         if clamped != value {
-            validationNote = viewModel.localizedFormat("已按范围调整", formatRate(clamped))
+            validationField = field
+            validationText = viewModel.localizedFormat("已按范围调整", formatRate(clamped))
         } else {
-            validationNote = nil
+            validationField = nil
+            validationText = ""
         }
         setText(field, to: formatRate(clamped))
     }
@@ -235,12 +278,13 @@ struct SettingsView: View {
     private func resetSettings() {
         viewModel.resetSettings()
         resetCount += 1
-        validationNote = nil
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        validationField = nil
+        validationText = ""
+        withAnimation(.snappy) {
             showResetSuccess = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(.snappy) {
                 showResetSuccess = false
             }
         }
@@ -259,11 +303,13 @@ private struct SettingRow: View {
     let title: String
     let subtitle: String
     let unit: String
+    /// 校验错误文案（已本地化）；nil 时显示 subtitle
+    var error: String? = nil
     @Binding var text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(LocalizedStringKey(title))
 
                 Spacer(minLength: 8)
@@ -271,18 +317,26 @@ private struct SettingRow: View {
                 TextField("", text: $text)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
                     .frame(minWidth: 72)
                     .frame(minHeight: 44)
 
                 if !unit.isEmpty {
                     Text(LocalizedStringKey(unit))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Text(LocalizedStringKey(subtitle))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let error {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.red)
+            } else {
+                Text(LocalizedStringKey(subtitle))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

@@ -91,6 +91,7 @@ struct HistoryView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .sensoryFeedback(.impact(weight: .light), trigger: viewModel.records.count)
                 .scrollDismissesKeyboard(.interactively)
             }
         }
@@ -106,7 +107,9 @@ struct HistoryView: View {
         ) {
             Button(role: .destructive) {
                 if let record = recordPendingDeletion {
-                    viewModel.deleteRecord(id: record.id)
+                    withAnimation(.snappy) {
+                        viewModel.deleteRecord(id: record.id)
+                    }
                 }
                 recordPendingDeletion = nil
             } label: {
@@ -128,8 +131,10 @@ struct HistoryView: View {
         return HStack(spacing: 8) {
             if let value = RecordDateFormat.day.date(from: date) {
                 Text(sectionTitle(for: value))
+                    .tracking(0.5)
             } else {
                 Text(date)
+                    .tracking(0.5)
             }
 
             Spacer(minLength: 8)
@@ -137,10 +142,11 @@ struct HistoryView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(viewModel.localizedFormat("笔数格式", records.count))
                 Text(viewModel.localizedFormat("日盈亏格式", dayNet >= 0 ? "+" : "-", abs(dayNet)))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(PnLStyle.color(dayNet))
             }
         }
-        .font(.caption.weight(.semibold))
+        .font(.caption.weight(.medium))
         .foregroundStyle(.secondary)
     }
 
@@ -148,8 +154,12 @@ struct HistoryView: View {
     private func sectionTitle(for date: Date) -> String {
         let calendar = Calendar.current
         let isCurrentYear = calendar.component(.year, from: date) == calendar.component(.year, from: Date())
+        let template = isCurrentYear ? "MMMdEEEE" : "yMMMdEEEE"
         let formatter = isCurrentYear ? RecordDateFormat.sectionHeader : RecordDateFormat.sectionHeaderWithYear
         formatter.locale = viewModel.effectiveLocale
+        // 模板在 setLocalizedDateFormatFromTemplate 调用瞬间按 locale 烘焙，
+        // 事后改 locale 不会重套——必须重新套用，否则英文模式下渲染出设备 locale 格式（"11月2日 Monday"）
+        formatter.setLocalizedDateFormatFromTemplate(template)
         return formatter.string(from: date)
     }
 }
@@ -163,66 +173,101 @@ private struct HistoryRow: View {
     private var timeText: String {
         guard let date = RecordDateFormat.full.date(from: record.date) else { return record.date }
         RecordDateFormat.time.locale = viewModel.effectiveLocale
+        // setLocalizedDateFormatFromTemplate 只在调用瞬间按 locale 烘焙模板，
+        // 事后改 locale 不会重套，需显式重新套用，否则英文模式下渲染出设备 locale 的格式
+        RecordDateFormat.time.setLocalizedDateFormatFromTemplate("j:mm")
         return RecordDateFormat.time.string(from: date)
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Text(LocalizedStringKey(record.stockCode))
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(record.stockCode == "未命名" ? Color.secondary : Color.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            record.stockCode == "未命名"
-                                ? AnyShapeStyle(.quaternary)
-                                : AnyShapeStyle(Color.blue.opacity(0.12)),
-                            in: .capsule
-                        )
-
-                    HStack(spacing: 4) {
-                        Text(String(format: "¥%.3f", record.buyPrice))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                        Image(systemName: "arrow.right")
-                            .imageScale(.small)
-                            .foregroundStyle(.tertiary)
-                        Text(String(format: "¥%.3f", record.sellPrice))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.6)
-                    }
-                    .font(.subheadline)
-                }
-
-                Text(viewModel.localizedFormat("股数时间格式", Int(record.shares), timeText))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            VStack(alignment: .trailing, spacing: 4) {
-                Text(String(format: "%@¥%.3f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(PnLStyle.color(record.netProfit))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                Text(String(format: "%@%.2f%%", record.returnRate >= 0 ? "+" : "", record.returnRate))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(PnLStyle.color(record.returnRate))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(width: 112, alignment: .trailing)
+        ViewThatFits(in: .horizontal) {
+            // 优先紧凑布局：买卖价与代码胶囊同行
+            rowLayout(pricesBesideTag: true)
+            // 宽度不足时降级：买卖价移到第二行，保证完整可读（不缩字、不截断）
+            rowLayout(pricesBesideTag: false)
         }
         .padding(.vertical, 8)
         .frame(minHeight: 44)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityHint("查看交易详情")
+    }
+
+    /// 行内容双布局。窄屏时价格换行而非缩字——Dynamic Type 友好
+    @ViewBuilder
+    private func rowLayout(pricesBesideTag: Bool) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                if pricesBesideTag {
+                    HStack(spacing: 8) {
+                        tagCapsule
+                        pricePair
+                    }
+                    secondaryLine
+                } else {
+                    HStack(spacing: 8) {
+                        tagCapsule
+                        secondaryLine
+                    }
+                    pricePair
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            profitColumn
+        }
+    }
+
+    private var tagCapsule: some View {
+        Text(LocalizedStringKey(record.stockCode))
+            .font(.caption.weight(.bold))
+            .foregroundStyle(record.hasName ? Color.stockTagText : .secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                record.hasName
+                    ? AnyShapeStyle(Color.stockTag)
+                    : AnyShapeStyle(.quaternary),
+                in: .capsule
+            )
+    }
+
+    private var pricePair: some View {
+        HStack(spacing: 4) {
+            Text(String(format: "%.3f", record.buyPrice))
+                .lineLimit(1)
+                .monospacedDigit()
+            Image(systemName: "arrow.right")
+                .imageScale(.small)
+                .foregroundStyle(.tertiary)
+            Text(String(format: "%.3f", record.sellPrice))
+                .lineLimit(1)
+                .monospacedDigit()
+        }
+        .font(.subheadline)
+    }
+
+    private var secondaryLine: some View {
+        Text(viewModel.localizedFormat("股数时间格式", Int(record.shares), timeText))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+
+    private var profitColumn: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            Text(String(format: "%@%.3f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(PnLStyle.color(record.netProfit))
+                .monospacedDigit()
+                .lineLimit(1)
+
+            Text(String(format: "%@%.2f%%", record.returnRate >= 0 ? "+" : "", record.returnRate))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(PnLStyle.color(record.returnRate))
+                .monospacedDigit()
+                .lineLimit(1)
+        }
     }
 }
 
@@ -242,7 +287,7 @@ private struct RecordDetailView: View {
                 .frame(minHeight: 44)
 
                 LabeledContent("净利润") {
-                    Text(String(format: "%@¥%.3f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
+                    Text(String(format: "%@%.3f", record.netProfit >= 0 ? "+" : "-", abs(record.netProfit)))
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(PnLStyle.color(record.netProfit))
                 }
@@ -263,67 +308,77 @@ private struct RecordDetailView: View {
 
             Section("交易") {
                 LabeledContent("买入") {
-                    Text(String(format: "¥%.3f × %lld", record.buyPrice, Int(record.shares)))
+                    Text(String(format: "%.3f × %lld", record.buyPrice, Int(record.shares)))
                         .foregroundStyle(.secondary)
                 }
                 .frame(minHeight: 44)
 
                 LabeledContent("卖出") {
-                    Text(String(format: "¥%.3f × %lld", record.sellPrice, Int(record.shares)))
+                    Text(String(format: "%.3f × %lld", record.sellPrice, Int(record.shares)))
                         .foregroundStyle(.secondary)
                 }
                 .frame(minHeight: 44)
 
                 LabeledContent("买入成本") {
-                    Text(String(format: "¥%.3f", record.buyAmount))
+                    Text(String(format: "%.3f", record.buyAmount))
                         .foregroundStyle(.secondary)
                 }
                 .frame(minHeight: 44)
 
                 LabeledContent("卖出金额") {
-                    Text(String(format: "¥%.3f", record.sellAmount))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-            }
-
-            Section("买入费用") {
-                LabeledContent("买入佣金") {
-                    Text(String(format: "¥%.3f", record.fees.buyCommission))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-
-                LabeledContent("过户费") {
-                    Text(String(format: "¥%.3f", record.fees.buyTransferFee))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-            }
-
-            Section("卖出费用") {
-                LabeledContent("卖出佣金") {
-                    Text(String(format: "¥%.3f", record.fees.sellCommission))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-
-                LabeledContent("印花税") {
-                    Text(String(format: "¥%.3f", record.fees.stampDuty))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(minHeight: 44)
-
-                LabeledContent("过户费") {
-                    Text(String(format: "¥%.3f", record.fees.sellTransferFee))
+                    Text(String(format: "%.3f", record.sellAmount))
                         .foregroundStyle(.secondary)
                 }
                 .frame(minHeight: 44)
             }
 
             Section {
+                DisclosureGroup {
+                    Text(LocalizedStringKey("买入费用"))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    LabeledContent("买入佣金") {
+                        Text(String(format: "%.3f", record.fees.buyCommission))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 44)
+
+                    LabeledContent("过户费") {
+                        Text(String(format: "%.3f", record.fees.buyTransferFee))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 44)
+
+                    Text(LocalizedStringKey("卖出费用"))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+
+                    LabeledContent("卖出佣金") {
+                        Text(String(format: "%.3f", record.fees.sellCommission))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 44)
+
+                    LabeledContent("印花税") {
+                        Text(String(format: "%.3f", record.fees.stampDuty))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 44)
+
+                    LabeledContent("过户费") {
+                        Text(String(format: "%.3f", record.fees.sellTransferFee))
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(minHeight: 44)
+                } label: {
+                    Label("费用明细", systemImage: "list.bullet")
+                }
+            }
+
+            Section {
                 LabeledContent("合计费用") {
-                    Text(String(format: "¥%.3f", record.fees.total))
+                    Text(String(format: "%.3f", record.fees.total))
                         .fontWeight(.bold)
                 }
                 .frame(minHeight: 44)

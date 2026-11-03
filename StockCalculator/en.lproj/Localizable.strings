@@ -4,9 +4,9 @@
 "交易" = "Trade";
 "交易费用" = "Fees";
 "净利润" = "Net Profit";
-"净利润格式" = "%@¥%.3f";
+"净利润格式" = "%@%.3f";
 "毛利润" = "Gross Profit";
-"毛利润格式" = "%@¥%.3f";
+"毛利润格式" = "%@%.3f";
 "收益率格式" = "%@%.2f%%";
 "收益率" = "Return Rate";
 "买入成本" = "Buy Cost";
@@ -31,15 +31,15 @@
 "买入" = "Buy";
 "卖出" = "Sell";
 "股数" = "Shares";
-"元" = "";
-"股" = "";
+"元" = "Yuan";
+"股" = "Shares";
 "盈亏" = "P&L";
 "加仓" = "Averaging";
 "计算模式" = "Mode";
 "平均成本" = "Avg Cost";
 "总股数格式" = "Total %@ sh";
 "浮动盈亏" = "Unrealized P&L";
-"浮动盈亏格式" = "%@¥%.3f  (%@%.2f%%)";
+"浮动盈亏格式" = "%@%.3f  (%@%.2f%%)";
 "总投入" = "Total Invested";
 "加仓金额" = "Add Amount";
 "新买入费用" = "New Buy Fees";
@@ -59,8 +59,10 @@
 "仅卖出时收取" = "Sell side only";
 "元/笔" = "";
 "恢复默认值" = "Reset to Defaults";
+"确认恢复默认费率" = "Reset fee settings to defaults?";
+"恢复默认说明" = "Your custom fee rates will be overwritten with the defaults.";
 "已恢复默认值" = "Defaults Restored";
-"默认费率说明" = "Defaults: commission 0.03% (min ¥5)\nstamp duty 0.05% (sell) · transfer fee 0.001% (both)\nAveraging uses these rates too";
+"默认费率说明" = "Defaults: commission 0.03% (min 5)\nstamp duty 0.05% (sell) · transfer fee 0.001% (both)\nAveraging uses these rates too";
 "外观与语言" = "Appearance & Language";
 "外观" = "Appearance";
 "语言" = "Language";
@@ -76,12 +78,20 @@
 "删除记录" = "Delete";
 "未命名" = "Untitled";
 "计算器" = "Calculator";
+
+// Mode cards (display layer)
+"交易盈亏" = "Trade";
+"加仓成本" = "Averaging";
+"涨跌推演" = "Scenario";
+"算净利润" = "Net profit";
+"算平均价" = "Avg. cost";
+"看目标收益" = "Target profit";
 "历史" = "History";
 "设置" = "Settings";
 "笔数格式" = "%ld";
 "股数时间格式" = "%lld sh · %@";
-"买入格式" = "Cost ¥%.3f";
-"费用格式" = "Fees ¥%.3f";
+"买入格式" = "Cost %.3f";
+"费用格式" = "Fees %.3f";
 /* Price scenario */
 "Profit" = "P&L";
 "Add Stock" = "Averaging";
@@ -111,8 +121,23 @@
 "确认删除标题" = "Delete this record?";
 "删除后无法恢复" = "This can't be undone.";
 "取消" = "Cancel";
-"日盈亏格式" = "Day P&L %@¥%.3f";
+"日盈亏格式" = "Day P&L %@%.3f";
 /* About */
 "关于" = "About";
 "版本" = "Version";
 "项目主页" = "GitHub";
+/* Modern calculator interface */
+"交易参数" = "Trade Details";
+"明细" = "Breakdown";
+"总股数" = "Total Shares";
+"摊薄成本" = "Diluted Cost";
+"买入过户费" = "Buy Transfer Fee";
+"卖出过户费" = "Sell Transfer Fee";
+"盈利" = "Profit";
+"亏损" = "Loss";
+"持平" = "Flat";
+"清空" = "Clear";
+"减少 1%" = "Decrease by 1%";
+"增加 1%" = "Increase by 1%";
+"完成" = "Done";
+"完成输入" = "Done Editing";
